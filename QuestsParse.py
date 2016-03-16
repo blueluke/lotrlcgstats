@@ -19,7 +19,7 @@ writer = csv.DictWriter(csvfile, fieldnames=fieldnames, extrasaction='ignore')
 writer.writeheader() # comment this if you don't want a header row
 
 # Loop over quests
-#directories = ['Easy','Quests','Nightmare']
+#directories = ['Easy','Quests','Nightmare', 'PoD', 'Campaign']
 directories = ['Quests']
 for directory in directories:
     for o8dfile in sorted(os.listdir(directory)):
@@ -27,6 +27,7 @@ for directory in directories:
         root = tree.getroot()
         stats = {
             "QuestName": "",
+            "CardsTotal": 0,
             "EnemyTotal": 0,
             "EnemyThreatTotal": 0,
             "EnemyAttackTotal": 0,
@@ -38,13 +39,26 @@ for directory in directories:
             "EnemyHealthAverage": 0,
             "LocationTotal": 0,
             "LocationQuestPointsTotal": 0,
-            "LocationThreatTotal": 0
+            "LocationThreatTotal": 0,
+            "ShadowTotal": 0,
+            "ShadowProbability": 0
         }
+
+        # Parse the quest name. Only works for normal quests - Needs adjustment for campaign
         stats["QuestName"] = o8dfile[10:-4]
+
         for card in root.getiterator('card'):
             OctgnID = card.get('id',0)
             Quantity = int(card.get('qty',0))
             cardObject = allcards.get(OctgnID,{});
+
+            # Count all cards
+            stats['CardsTotal'] = stats['CardsTotal'] + Quantity
+
+            # Check and count shadow effects
+            if 'Shadow' in cardObject:
+                stats["ShadowTotal"] = stats["ShadowTotal"]  + Quantity
+
             # Enemies
             if (cardObject.get("Type","") == "Enemy"):
                 stats["EnemyTotal"] = stats["EnemyTotal"] + Quantity
@@ -95,7 +109,7 @@ for directory in directories:
                     Threat = 0;                
                 stats["LocationThreatTotal"] = stats["LocationThreatTotal"] + Threat*Quantity
 
-        
+
         # Calculate averages
         stats["EnemyThreatAverage"] = float(stats["EnemyThreatTotal"])/stats["EnemyTotal"]
         stats["EnemyAttackAverage"] = float(stats["EnemyAttackTotal"])/stats["EnemyTotal"]
@@ -103,6 +117,7 @@ for directory in directories:
         stats["EnemyHealthAverage"] = float(stats["EnemyHealthTotal"])/stats["EnemyTotal"]
         stats["LocationQuestPointsAverage"] = float(stats["LocationQuestPointsTotal"])/stats["LocationTotal"]
         stats["LocationThreatAverage"] = float(stats["LocationThreatTotal"])/stats["LocationTotal"]
+        stats["ShadowProbability"] = float(stats["ShadowTotal"])/stats["CardsTotal"]
 
         # Print to stout - uncomment this if you want console output
         # print o8dfile
